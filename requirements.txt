@@ -1,0 +1,5 @@
+PyQt5==5.15.11
+PyQtChart==5.15.7
+SQLAlchemy==2.0.23
+qdarkstyle==3.1
+watchdog==6.0.0
