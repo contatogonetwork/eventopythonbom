@@ -74,3 +74,9 @@
 2025-05-18 00:20:46,818 - qdarkstyle - INFO - QSS file successfully loaded.
 2025-05-18 00:20:46,818 - qdarkstyle - INFO - Found version patches to be applied.
 2025-05-18 00:20:46,819 - qdarkstyle - INFO - Found application patches to be applied.
+2025-05-18 06:39:52,872 - root - WARNING - qt_material must be imported after PySide or PyQt!
+2025-05-18 06:39:52,905 - root - WARNING - name 'QFontDatabase' is not defined
+2025-05-18 06:47:37,063 - AssetIngestor - INFO - Arquivo processado com sucesso: C:\Users\drdan\OneDrive\Área de Trabalho\CAROL_PEIXINHO\RENDER\EVEREST_CAROL_PEIXINHO_V4.mp4 -> 20250518_064736_bef7d6d0_EVEREST_CAROL_PEIXINHO_V4.mp4
+2025-05-18 06:48:08,500 - AssetIngestor - INFO - Monitoramento iniciado na pasta: C:\Users\drdan\GoNetworkAI\incoming
+2025-05-18 06:48:10,576 - AssetIngestor - INFO - Monitoramento interrompido
+2025-05-18 07:00:15,153 - AssetIngestor - INFO - Arquivo processado com sucesso: C:\Users\drdan\OneDrive\Área de Trabalho\CAROL_PEIXINHO\RENDER\EVEREST_CAROL_PEIXINHO_V4.mp4 -> 20250518_070015_bef7d6d0_EVEREST_CAROL_PEIXINHO_V4.mp4
