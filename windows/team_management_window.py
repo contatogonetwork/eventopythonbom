@@ -114,7 +114,7 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
         self.load_talent_pool()
         
         # Carregar equipe do evento se houver evento selecionado
-        if self.event_context.event_id:
+        if hasattr(self, 'event_context') and self.event_context and self.event_context.event_id:
             self.load_event_team()
     
     def init_ui(self):
@@ -136,8 +136,8 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
         talent_panel.addWidget(talent_label)
         
         self.talent_table = QTableWidget()
-        self.talent_table.setColumnCount(3)
-        self.talent_table.setHorizontalHeaderLabels(["Nome", "Função", "Contato"])
+        self.talent_table.setColumnCount(4)  # Aumentado para 4 para incluir a coluna ID
+        self.talent_table.setHorizontalHeaderLabels(["Nome", "Função", "Contato", "ID"])
         self.talent_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.talent_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.talent_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -165,8 +165,8 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
         team_panel.addWidget(team_label)
         
         self.event_team_table = QTableWidget()
-        self.event_team_table.setColumnCount(3)
-        self.event_team_table.setHorizontalHeaderLabels(["Nome", "Função no Evento", "Contato"])
+        self.event_team_table.setColumnCount(4)  # Aumentado para 4 para incluir a coluna ID
+        self.event_team_table.setHorizontalHeaderLabels(["Nome", "Função no Evento", "Contato", "ID"])
         self.event_team_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.event_team_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.event_team_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -206,10 +206,14 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
             self.setWindowTitle(f"Gerenciamento de Equipe - {event_name}")
             self.status_label.setText(f"Gerenciando equipe para o evento: {event_name}")
             self.load_event_team()
+            # Atualizar estado do botão baseado na seleção atual
+            self.on_talent_selection_changed()
         else:
             self.setWindowTitle("Gerenciamento de Equipe")
             self.status_label.setText("Selecione um evento para gerenciar a equipe.")
             self.event_team_table.setRowCount(0)
+            # Desabilitar botão quando não houver evento selecionado
+            self.select_member_button.setEnabled(False)
     
     def load_talent_pool(self):
         """Carrega a lista de membros do banco de talentos"""
@@ -234,43 +238,52 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
         session.close()
     
     def load_event_team(self):
-        """Carrega a equipe do evento atual"""
-        if not self.event_context.event_id:
-            self.event_team_table.setRowCount(0)
+        """Carrega a equipe do evento atual de forma mais segura"""
+        # Limpar tabela por padrão
+        self.event_team_table.setRowCount(0)
+        
+        # Verificação segura do contexto
+        if not hasattr(self, 'event_context') or not self.event_context or not self.event_context.event_id:
             return
-        
-        session = get_db_session()
-        
-        event = session.query(Event).filter(Event.id == self.event_context.event_id).first()
-        
-        if event and event.team_members:
-            self.event_team_table.setRowCount(len(event.team_members))
             
-            for i, member in enumerate(event.team_members):
-                self.event_team_table.setItem(i, 0, QTableWidgetItem(member.name))
+        session = get_db_session()
+        try:
+            event = session.query(Event).filter(Event.id == self.event_context.event_id).first()
+            
+            if not event or not event.team_members:
+                return
                 
-                # Buscar a função do membro neste evento específico
-                role = ""
-                for assoc in event.team_members:
-                    if assoc.id == member.id:
-                        # Em produção real, precisaríamos acessar a tabela de associação
-                        # para obter a função específica
-                        role = "A ser definido"
-                        break
-                
-                self.event_team_table.setItem(i, 1, QTableWidgetItem(role))
-                self.event_team_table.setItem(i, 2, QTableWidgetItem(member.contact_email or ""))
-                
-                # Armazenar ID para referência
-                item = QTableWidgetItem(member.id)
-                self.event_team_table.setItem(i, 3, item)
-        else:
-            self.event_team_table.setRowCount(0)
-        
-        # Esconder coluna de ID
-        self.event_team_table.setColumnHidden(3, True)
-        
-        session.close()
+            # Preencher tabela com membros da equipe
+            members = event.team_members
+            self.event_team_table.setRowCount(len(members))
+            
+            for i, member in enumerate(members):
+                # Verificação segura para cada célula
+                if member:
+                    # Nome do membro
+                    self.event_team_table.setItem(i, 0, QTableWidgetItem(member.name or ""))
+                    
+                    # Função no evento (se disponível na tabela de associação)
+                    role = "A definir"  # Valor padrão
+                    
+                    # Em uma implementação completa, buscaríamos a função específica para este evento
+                    # Por enquanto, usamos um valor padrão para cada membro
+                    self.event_team_table.setItem(i, 1, QTableWidgetItem(role))
+                    
+                    # Contato
+                    contact = member.contact_email or ""
+                    self.event_team_table.setItem(i, 2, QTableWidgetItem(contact))
+                    
+                    # ID oculto
+                    self.event_team_table.setItem(i, 3, QTableWidgetItem(member.id))
+            
+            # Esconder coluna de ID
+            self.event_team_table.setColumnHidden(3, True)
+            
+        except Exception as e:
+            QMessageBox.critical(self, "Erro ao carregar equipe", f"Ocorreu um erro ao carregar a equipe: {str(e)}")
+        finally:
+            session.close()
     
     def add_talent(self):
         """Abre diálogo para adicionar membro ao banco de talentos"""
@@ -302,55 +315,78 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
     
     def add_to_event_team(self):
         """Adiciona o membro selecionado do banco de talentos à equipe do evento"""
-        if not self.event_context.event_id:
-            QMessageBox.warning(self, "Erro", "Nenhum evento selecionado.")
+        # 1. Verificar se há um evento selecionado
+        if not hasattr(self, 'event_context') or not self.event_context or not self.event_context.event_id:
+            QMessageBox.warning(self, "Evento não selecionado", "Selecione um evento antes de adicionar membros.")
             return
         
-        selected_row = self.talent_table.currentRow()
+        event_id = self.event_context.event_id
         
-        if selected_row < 0:
-            return
-        
-        # Verificar se o item existe antes de acessá-lo
-        id_item = self.talent_table.item(selected_row, 3)
-        name_item = self.talent_table.item(selected_row, 0)
-        
-        if id_item is None or name_item is None:
-            QMessageBox.warning(self, "Erro", "Não foi possível obter os dados do membro selecionado.")
-            return
-            
-        member_id = id_item.text()
-        member_name = name_item.text()
-        
-        # Verificar se já está na equipe
-        for row in range(self.event_team_table.rowCount()):
-            if member_id == self.event_team_table.item(row, 3).text():
-                QMessageBox.information(self, "Informação", f"{member_name} já está na equipe.")
+        # 2. Verificar se o evento existe no banco de dados
+        session = get_db_session()
+        try:
+            event = session.query(Event).filter(Event.id == event_id).first()
+            if not event:
+                QMessageBox.warning(self, "Erro", "O evento selecionado não foi encontrado no banco de dados.")
                 return
-        
-        # Abrir diálogo para definir função
-        dialog = AssignRoleDialog(member_name, self)
-        
-        if dialog.exec_() == QDialog.Accepted:
-            role = dialog.get_role()
             
-            session = get_db_session()
+            # 3. Obter índice da linha selecionada na tabela de talentos
+            selected_row = self.talent_table.currentRow()
+            if selected_row < 0:
+                QMessageBox.warning(self, "Nenhum membro selecionado", "Selecione um membro do banco de talentos.")
+                return
             
-            event = session.query(Event).filter(Event.id == self.event_context.event_id).first()
-            member = session.query(TeamMember).filter(TeamMember.id == member_id).first()
+            # 4. Verificar se o item existe antes de acessá-lo
+            id_item = self.talent_table.item(selected_row, 3)  # ID está na coluna oculta 3
+            name_item = self.talent_table.item(selected_row, 0)  # Nome está na coluna 0
             
-            if event and member:
-                # Adicionar membro à equipe com a função especificada
-                if member not in event.team_members:
-                    event.team_members.append(member)
-                    
-                    # Em produção real, aqui definiriamos a função na tabela de associação
-                    
+            if id_item is None or name_item is None:
+                QMessageBox.warning(self, "Erro", "Não foi possível obter os dados do membro selecionado.")
+                return
+            
+            member_id = id_item.text()
+            member_name = name_item.text()
+            
+            # 5. Obter o membro do banco de dados para verificar sua existência
+            try:
+                member = session.query(TeamMember).filter(TeamMember.id == member_id).first()
+                if not member:
+                    QMessageBox.critical(self, "Erro", "Membro não encontrado no banco de dados.")
+                    return
+            except Exception as e:
+                QMessageBox.critical(self, "Erro", f"Erro ao buscar membro: {str(e)}")
+                return
+            
+            # 6. Verificar se já está na equipe
+            if member in event.team_members:
+                QMessageBox.information(self, "Já está na equipe", f"{member_name} já está na equipe deste evento.")
+                return
+            
+            # 7. Abrir diálogo para definir função
+            dialog = AssignRoleDialog(member_name, self)
+            if dialog.exec_() == QDialog.Accepted:
+                role = dialog.get_role()
+                
+                # 8. Adicionar membro à equipe com a função especificada
+                event.team_members.append(member)
+                
+                # Adicionar função na tabela de associação - aqui precisamos acessar diretamente a tabela
+                # Isso é uma aproximação, já que não temos acesso direto à associação
+                # Em um ambiente de produção, você implementaria corretamente o armazenamento da função
+                
+                # 9. Commit das alterações
+                try:
                     session.commit()
+                    QMessageBox.information(self, "Sucesso", f"{member_name} adicionado à equipe como {role}.")
                     
-                    # Recarregar equipe
+                    # 10. Recarregar equipe
                     self.load_event_team()
-            
+                except Exception as e:
+                    session.rollback()
+                    QMessageBox.critical(self, "Erro", f"Erro ao salvar: {str(e)}")
+        except Exception as e:
+            QMessageBox.critical(self, "Erro", f"Ocorreu um erro inesperado: {str(e)}")
+        finally:
             session.close()
     
     def remove_from_event_team(self):
@@ -431,8 +467,26 @@ class TeamManagementWindow(QWidget, EventAwareWindow):
     
     def on_talent_selection_changed(self):
         """Habilita ou desabilita botões conforme seleção da tabela de talentos"""
-        selected = len(self.talent_table.selectedItems()) > 0
-        self.select_member_button.setEnabled(selected and bool(self.event_context.event_id))
+        # Verificar se há uma linha selecionada na tabela
+        selected = self.talent_table.currentRow() >= 0
+        
+        # Verificar se o evento está selecionado
+        event_selected = False
+        try:
+            event_selected = hasattr(self, 'event_context') and self.event_context is not None and bool(self.event_context.event_id)
+        except Exception:
+            event_selected = False
+            
+        # Habilitar botão apenas se ambas condições forem verdadeiras
+        self.select_member_button.setEnabled(selected and event_selected)
+        
+        # Atualizar status na interface
+        if not event_selected:
+            self.status_label.setText("Selecione um evento para gerenciar a equipe.")
+        elif not selected:
+            self.status_label.setText(f"Evento: {self.event_context.event_name or 'selecionado'}. Selecione um membro para adicionar.")
+        else:
+            self.status_label.setText(f"Evento: {self.event_context.event_name or 'selecionado'}. Clique em 'Adicionar à Equipe' para incluir o membro selecionado.")
     
     def on_team_selection_changed(self):
         """Habilita ou desabilita botões conforme seleção da tabela de equipe"""

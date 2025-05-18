@@ -1,9 +1,9 @@
 from PyQt5.QtWidgets import (
-    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, 
-    QTableWidget, QTableWidgetItem, QHeaderView, QDialog,
-    QFormLayout, QLineEdit, QComboBox, QTextEdit, QMessageBox,
-    QFileDialog, QListWidget, QListWidgetItem, QTabWidget,
-    QProgressBar, QMenu, QAction
+    QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
+    QLineEdit, QTextEdit, QComboBox, QFileDialog, QDateEdit,
+    QMessageBox, QTableWidget, QTableWidgetItem, QHeaderView,
+    QMenu, QDialog, QAction, QListWidget, QTabWidget,
+    QProgressBar, QFormLayout, QListWidgetItem
 )
 from PyQt5.QtCore import Qt, QDate, QDateTime
 from PyQt5.QtGui import QIcon, QColor, QBrush
@@ -121,8 +121,8 @@ class AddVersionDialog(QDialog):
         
         # Lista de arquivos disponíveis
         self.assets_list = QTableWidget()
-        self.assets_list.setColumnCount(3)
-        self.assets_list.setHorizontalHeaderLabels(["Arquivo", "Tipo", "Tamanho"])
+        self.assets_list.setColumnCount(4)  # Aumentado para 4 para incluir a coluna ID
+        self.assets_list.setHorizontalHeaderLabels(["Arquivo", "Tipo", "Tamanho", "ID"])
         self.assets_list.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.assets_list.setSelectionBehavior(QTableWidget.SelectRows)
         self.assets_list.setSelectionMode(QTableWidget.MultiSelection)
@@ -209,14 +209,26 @@ class AddVersionDialog(QDialog):
     
     def get_selected_assets(self):
         """Retorna os IDs dos assets selecionados"""
-        selected_rows = self.assets_list.selectedItems()
         selected_ids = []
         
-        for item in selected_rows:
-            row = item.row()
-            asset_id = self.assets_list.item(row, 3).text()
-            if asset_id not in selected_ids:
-                selected_ids.append(asset_id)
+        try:
+            selected_rows = self.assets_list.selectedItems()
+            
+            for item in selected_rows:
+                row = item.row()
+                id_item = self.assets_list.item(row, 3)
+                
+                if id_item is not None:
+                    asset_id = id_item.text()
+                    if asset_id and asset_id not in selected_ids:
+                        selected_ids.append(asset_id)
+                        
+        except Exception as e:
+            QMessageBox.warning(
+                self,
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao recuperar os assets selecionados:\n{str(e)}"
+            )
         
         return selected_ids
     
@@ -238,8 +250,10 @@ class DeliveryWindow(QWidget, EventAwareWindow):
         self.init_ui()
         
         # Carregar entregas se houver evento selecionado
-        if self.event_context.event_id:
+        if hasattr(self, 'event_context') and self.event_context and self.event_context.event_id:
             self.load_deliveries()
+        else:
+            self.status_label.setText("Selecione um evento para visualizar entregas.")
     
     def init_ui(self):
         main_layout = QVBoxLayout()
@@ -302,8 +316,8 @@ class DeliveryWindow(QWidget, EventAwareWindow):
         
         # Tabela de entregas
         self.all_deliveries_table = QTableWidget()
-        self.all_deliveries_table.setColumnCount(5)
-        self.all_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável"])
+        self.all_deliveries_table.setColumnCount(6)  # 6 colunas incluindo a de ID
+        self.all_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável", "ID"])
         self.all_deliveries_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.all_deliveries_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.all_deliveries_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -324,8 +338,8 @@ class DeliveryWindow(QWidget, EventAwareWindow):
         
         # Tabela de entregas pendentes
         self.pending_deliveries_table = QTableWidget()
-        self.pending_deliveries_table.setColumnCount(5)
-        self.pending_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável"])
+        self.pending_deliveries_table.setColumnCount(6)  # Aumentado para 6 para incluir a coluna ID
+        self.pending_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável", "ID"])
         self.pending_deliveries_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.pending_deliveries_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.pending_deliveries_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -346,8 +360,8 @@ class DeliveryWindow(QWidget, EventAwareWindow):
         
         # Tabela de entregas em revisão
         self.review_deliveries_table = QTableWidget()
-        self.review_deliveries_table.setColumnCount(5)
-        self.review_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável"])
+        self.review_deliveries_table.setColumnCount(6)  # Aumentado para 6 para incluir a coluna ID
+        self.review_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável", "ID"])
         self.review_deliveries_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.review_deliveries_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.review_deliveries_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -368,8 +382,8 @@ class DeliveryWindow(QWidget, EventAwareWindow):
         
         # Tabela de entregas aprovadas
         self.approved_deliveries_table = QTableWidget()
-        self.approved_deliveries_table.setColumnCount(5)
-        self.approved_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável"])
+        self.approved_deliveries_table.setColumnCount(6)  # Aumentado para 6 para incluir a coluna ID
+        self.approved_deliveries_table.setHorizontalHeaderLabels(["Título", "Tipo", "Prazo", "Status", "Responsável", "ID"])
         self.approved_deliveries_table.horizontalHeader().setSectionResizeMode(QHeaderView.Stretch)
         self.approved_deliveries_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.approved_deliveries_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -386,16 +400,25 @@ class DeliveryWindow(QWidget, EventAwareWindow):
     
     def on_event_changed(self, event_id, event_name):
         """Implementação do EventAwareWindow"""
-        if event_id:
-            self.title_label.setText(f"Entregas - {event_name}")
-            self.setWindowTitle(f"Entregas - {event_name}")
-            self.status_label.setText(f"Visualizando entregas do evento: {event_name}")
-            self.load_deliveries()
-        else:
-            self.title_label.setText("Entregas")
-            self.setWindowTitle("Entregas")
-            self.status_label.setText("Selecione um evento para visualizar entregas.")
-            self.clear_tables()
+        try:
+            if event_id:
+                self.title_label.setText(f"Entregas - {event_name}")
+                self.setWindowTitle(f"Entregas - {event_name}")
+                self.status_label.setText(f"Visualizando entregas do evento: {event_name}")
+                self.load_deliveries()
+            else:
+                self.title_label.setText("Entregas")
+                self.setWindowTitle("Entregas")
+                self.status_label.setText("Selecione um evento para visualizar entregas.")
+                self.clear_tables()
+                
+        except Exception as e:
+            self.status_label.setText("[ERRO] Falha ao atualizar contexto do evento.")
+            QMessageBox.critical(
+                self, 
+                "[GoNetwork AI] Erro", 
+                f"Ocorreu um erro ao mudar o contexto do evento:\n{str(e)}"
+            )
     
     def clear_tables(self):
         """Limpa todas as tabelas de entregas"""
@@ -406,141 +429,206 @@ class DeliveryWindow(QWidget, EventAwareWindow):
     
     def load_deliveries(self):
         """Carrega as entregas do evento atual"""
-        if not self.event_context.event_id:
-            return
-        
-        session = get_db_session()
-        
-        deliveries = session.query(Delivery).filter(
-            Delivery.event_id == self.event_context.event_id
-        ).all()
-        
-        # Limpar tabelas
-        self.clear_tables()
-        
-        # Separar por status
-        pending = []
-        review = []
-        approved = []
-        
-        for delivery in deliveries:
-            # Adicionar à tabela principal
-            self.add_delivery_to_table(self.all_deliveries_table, delivery)
+        try:
+            if not self.event_context.event_id:
+                self.status_label.setText("Selecione um evento para visualizar entregas.")
+                return
+            
+            session = get_db_session()
+            
+            deliveries = session.query(Delivery).filter(
+                Delivery.event_id == self.event_context.event_id
+            ).all()
+            
+            # Limpar tabelas
+            self.clear_tables()
             
             # Separar por status
-            if delivery.status in ['pending', 'in-progress']:
-                pending.append(delivery)
-            elif delivery.status == 'review':
-                review.append(delivery)
-            elif delivery.status in ['approved', 'published']:
-                approved.append(delivery)
+            pending = []
+            review = []
+            approved = []
+            
+            for delivery in deliveries:
+                # Adicionar à tabela principal
+                self.add_delivery_to_table(self.all_deliveries_table, delivery)
+                
+                # Separar por status
+                if delivery.status in ['pending', 'in-progress']:
+                    pending.append(delivery)
+                elif delivery.status == 'review':
+                    review.append(delivery)
+                elif delivery.status in ['approved', 'published']:
+                    approved.append(delivery)
+            
+            # Configurar tabelas específicas
+            for i, delivery in enumerate(pending):
+                self.add_delivery_to_table(self.pending_deliveries_table, delivery, i)
+            
+            for i, delivery in enumerate(review):
+                self.add_delivery_to_table(self.review_deliveries_table, delivery, i)
+            
+            for i, delivery in enumerate(approved):
+                self.add_delivery_to_table(self.approved_deliveries_table, delivery, i)
+            
+            # Atualizar contadores nas tabs
+            self.tabs.setTabText(1, f"Pendentes ({len(pending)})")
+            self.tabs.setTabText(2, f"Em Revisão ({len(review)})")
+            self.tabs.setTabText(3, f"Aprovadas ({len(approved)})")
+            
+            # Atualizar rótulo de status
+            event_name = self.event_context.event_name or "Evento atual"
+            self.status_label.setText(f"Visualizando {len(deliveries)} entregas do evento: {event_name}")
         
-        # Configurar tabelas específicas
-        for i, delivery in enumerate(pending):
-            self.add_delivery_to_table(self.pending_deliveries_table, delivery, i)
-        
-        for i, delivery in enumerate(review):
-            self.add_delivery_to_table(self.review_deliveries_table, delivery, i)
-        
-        for i, delivery in enumerate(approved):
-            self.add_delivery_to_table(self.approved_deliveries_table, delivery, i)
-        
-        # Atualizar contadores nas tabs
-        self.tabs.setTabText(1, f"Pendentes ({len(pending)})")
-        self.tabs.setTabText(2, f"Em Revisão ({len(review)})")
-        self.tabs.setTabText(3, f"Aprovadas ({len(approved)})")
-        
-        session.close()
+        except Exception as e:
+            self.status_label.setText("[ERRO] Falha ao carregar entregas.")
+            QMessageBox.critical(
+                self,
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao carregar as entregas:\n{str(e)}"
+            )
+        finally:
+            if 'session' in locals():
+                session.close()
     
     def add_delivery_to_table(self, table, delivery, row=None):
         """Adiciona uma entrega à tabela especificada"""
-        if row is None:
-            row = table.rowCount()
-            table.insertRow(row)
+        try:
+            if row is None:
+                row = table.rowCount()
+                table.insertRow(row)
+            
+            # Título
+            table.setItem(row, 0, QTableWidgetItem(delivery.title or "Sem título"))
+            
+            # Tipo
+            table.setItem(row, 1, QTableWidgetItem(delivery.delivery_type or "Não especificado"))
+            
+            # Prazo
+            due_date = delivery.due_date.strftime("%d/%m/%Y") if delivery.due_date else "-"
+            table.setItem(row, 2, QTableWidgetItem(due_date))
+            
+            # Status com formatação
+            status_map = {
+                'pending': 'Pendente',
+                'in-progress': 'Em andamento',
+                'review': 'Em revisão',
+                'approved': 'Aprovado',
+                'published': 'Publicado'
+            }
+            status_text = status_map.get(delivery.status, delivery.status.capitalize() if delivery.status else "Desconhecido")
+            status_item = QTableWidgetItem(status_text)
+            
+            if delivery.status == 'approved' or delivery.status == 'published':
+                status_item.setBackground(QBrush(QColor(200, 255, 200)))  # Verde claro
+            elif delivery.status == 'review':
+                status_item.setBackground(QBrush(QColor(255, 255, 200)))  # Amarelo claro
+            elif delivery.status == 'in-progress':
+                status_item.setBackground(QBrush(QColor(230, 230, 255)))  # Azul claro
+            
+            table.setItem(row, 3, status_item)
+            
+            # Responsável
+            responsible_name = delivery.created_by.name if hasattr(delivery, 'created_by') and delivery.created_by else "-"
+            table.setItem(row, 4, QTableWidgetItem(responsible_name))
+            
+            # Armazenar ID para referência
+            table.setItem(row, 5, QTableWidgetItem(delivery.id))
+            
+            # Esconder coluna de ID
+            table.setColumnHidden(5, True)
         
-        # Título
-        table.setItem(row, 0, QTableWidgetItem(delivery.title))
-        
-        # Tipo
-        table.setItem(row, 1, QTableWidgetItem(delivery.delivery_type))
-        
-        # Prazo
-        due_date = delivery.due_date.strftime("%d/%m/%Y") if delivery.due_date else "-"
-        table.setItem(row, 2, QTableWidgetItem(due_date))
-        
-        # Status com formatação
-        status_map = {
-            'pending': 'Pendente',
-            'in-progress': 'Em andamento',
-            'review': 'Em revisão',
-            'approved': 'Aprovado',
-            'published': 'Publicado'
-        }
-        status_item = QTableWidgetItem(status_map.get(delivery.status, delivery.status.capitalize()))
-        
-        if delivery.status == 'approved' or delivery.status == 'published':
-            status_item.setBackground(QBrush(QColor(200, 255, 200)))  # Verde claro
-        elif delivery.status == 'review':
-            status_item.setBackground(QBrush(QColor(255, 255, 200)))  # Amarelo claro
-        
-        table.setItem(row, 3, status_item)
-        
-        # Responsável
-        responsible_name = delivery.created_by.name if delivery.created_by else "-"
-        table.setItem(row, 4, QTableWidgetItem(responsible_name))
-        
-        # Armazenar ID para referência
-        table.setItem(row, 5, QTableWidgetItem(delivery.id))
-        
-        # Esconder coluna de ID
-        table.setColumnHidden(5, True)
+        except Exception as e:
+            print(f"Erro ao adicionar entrega à tabela: {str(e)}")
     
     def create_delivery(self):
         """Abre diálogo para criar uma nova entrega"""
-        if not self.event_context.event_id:
-            QMessageBox.warning(self, "Erro", "Selecione um evento primeiro.")
-            return
-        
-        dialog = CreateDeliveryDialog(self.event_context.event_id, self)
-        
-        if dialog.exec_() == QDialog.Accepted:
-            delivery_data = dialog.get_delivery_data()
+        try:
+            if not self.event_context:
+                QMessageBox.warning(self, "[GoNetwork AI] Erro", "Contexto de evento não inicializado.")
+                return
+                
+            if not self.event_context.event_id:
+                QMessageBox.warning(self, "[GoNetwork AI] Erro", "Selecione um evento primeiro.")
+                return
             
-            # Adicionar ID do evento
-            delivery_data["event_id"] = self.event_context.event_id
-            delivery_data["status"] = "pending"
+            dialog = CreateDeliveryDialog(self.event_context.event_id, self)
             
-            session = get_db_session()
-            
-            new_delivery = Delivery(**delivery_data)
-            session.add(new_delivery)
-            session.commit()
-            
-            session.close()
-            
-            # Recarregar entregas
-            self.load_deliveries()
-            
-            # Informar usuário
-            QMessageBox.information(
-                self,
-                "Entrega Criada",
-                f"A entrega '{delivery_data['title']}' foi criada com sucesso."
+            if dialog.exec_() == QDialog.Accepted:
+                delivery_data = dialog.get_delivery_data()
+                
+                # Validar dados obrigatórios
+                if not delivery_data["title"]:
+                    QMessageBox.warning(self, "[GoNetwork AI] Erro", "O título da entrega é obrigatório.")
+                    return
+                    
+                if not delivery_data["created_by_id"]:
+                    QMessageBox.warning(self, "[GoNetwork AI] Erro", "Selecione um responsável pela entrega.")
+                    return
+                
+                # Adicionar ID do evento
+                delivery_data["event_id"] = self.event_context.event_id
+                delivery_data["status"] = "pending"
+                
+                session = get_db_session()
+                
+                new_delivery = Delivery(**delivery_data)
+                session.add(new_delivery)
+                session.commit()
+                
+                # Recarregar entregas
+                self.load_deliveries()
+                
+                # Informar usuário
+                QMessageBox.information(
+                    self,
+                    "[GoNetwork AI] Entrega Criada",
+                    f"A entrega '{delivery_data['title']}' foi criada com sucesso."
+                )
+                
+        except Exception as e:
+            QMessageBox.critical(
+                self, 
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao criar a entrega:\n{str(e)}"
             )
+        finally:
+            if 'session' in locals():
+                session.close()
     
     def add_version(self, delivery_id):
         """Adiciona uma nova versão para a entrega"""
-        dialog = AddVersionDialog(delivery_id, self)
-        
-        if dialog.exec_() == QDialog.Accepted:
-            version_data = dialog.get_version_data()
+        try:
+            if not delivery_id:
+                QMessageBox.warning(self, "[GoNetwork AI] Erro", "ID de entrega inválido.")
+                return
+                
+            dialog = AddVersionDialog(delivery_id, self)
             
-            session = get_db_session()
-            
-            # Buscar entrega
-            delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
-            
-            if delivery:
+            if dialog.exec_() == QDialog.Accepted:
+                version_data = dialog.get_version_data()
+                
+                # Validar se pelo menos um asset ou arquivo externo foi selecionado
+                if not version_data["selected_assets"] and not version_data["external_file"]:
+                    QMessageBox.warning(
+                        self,
+                        "[GoNetwork AI] Erro",
+                        "Você precisa selecionar pelo menos um arquivo para esta versão."
+                    )
+                    return
+                
+                session = get_db_session()
+                
+                # Buscar entrega
+                delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
+                
+                if not delivery:
+                    QMessageBox.warning(
+                        self,
+                        "[GoNetwork AI] Erro",
+                        "Não foi possível encontrar a entrega no banco de dados."
+                    )
+                    return
+                    
                 # Determinar número da versão
                 version_number = 1
                 if delivery.versions:
@@ -553,6 +641,14 @@ class DeliveryWindow(QWidget, EventAwareWindow):
                 # Se um arquivo externo foi selecionado
                 if version_data["external_file"]:
                     external_file = version_data["external_file"]
+                    if not os.path.exists(external_file):
+                        QMessageBox.warning(
+                            self,
+                            "[GoNetwork AI] Erro",
+                            f"O arquivo externo selecionado não existe: {external_file}"
+                        )
+                        return
+                        
                     file_path = external_file
                     file_size = os.path.getsize(external_file) / (1024 * 1024)  # MB
                 
@@ -573,7 +669,12 @@ class DeliveryWindow(QWidget, EventAwareWindow):
                 delivery.status = "review"
                 
                 # Vincular assets à versão
-                # Em uma implementação completa, aqui vincularíamos os assets selecionados
+                for asset_id in version_data["selected_assets"]:
+                    asset = session.query(Asset).filter(Asset.id == asset_id).first()
+                    if asset:
+                        # Adicionar referência ao asset original
+                        new_version.source_asset_id = asset.id
+                        break  # Por enquanto, apenas vinculamos o primeiro asset
                 
                 session.commit()
                 
@@ -583,11 +684,19 @@ class DeliveryWindow(QWidget, EventAwareWindow):
                 # Informar usuário
                 QMessageBox.information(
                     self,
-                    "Versão Adicionada",
+                    "[GoNetwork AI] Versão Adicionada",
                     f"A versão {version_number} foi adicionada com sucesso à entrega '{delivery.title}'."
                 )
-            
-            session.close()
+                
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao adicionar a versão:\n{str(e)}"
+            )
+        finally:
+            if 'session' in locals():
+                session.close()
     
     def show_context_menu(self, position, table):
         """Mostra menu de contexto para a entrega selecionada"""
@@ -596,8 +705,16 @@ class DeliveryWindow(QWidget, EventAwareWindow):
         if selected_row < 0:
             return
         
-        delivery_id = table.item(selected_row, 5).text()
-        delivery_title = table.item(selected_row, 0).text()
+        # Verificar se os itens existem antes de acessá-los
+        id_item = table.item(selected_row, 5)
+        title_item = table.item(selected_row, 0)
+        
+        if id_item is None or title_item is None:
+            QMessageBox.warning(self, "[GoNetwork AI] Erro", "Não foi possível acessar os dados da entrega selecionada.")
+            return
+            
+        delivery_id = id_item.text()
+        delivery_title = title_item.text()
         
         menu = QMenu(self)
         
@@ -649,22 +766,41 @@ class DeliveryWindow(QWidget, EventAwareWindow):
     
     def view_delivery_details(self, table):
         """Abre diálogo com detalhes da entrega"""
-        selected_row = table.currentRow()
-        
-        if selected_row < 0:
-            return
-        
-        delivery_id = table.item(selected_row, 5).text()
-        
-        session = get_db_session()
-        
-        delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
-        
-        if delivery:
-            # Aqui seria implementado um diálogo detalhado mostrando todas as informações
-            # da entrega, incluindo histórico de versões, comentários, etc.
-            # Por simplicidade, apenas mostramos uma mensagem.
+        try:
+            selected_row = table.currentRow()
             
+            if selected_row < 0:
+                QMessageBox.warning(self, "[GoNetwork AI] Aviso", "Nenhuma entrega selecionada.")
+                return
+            
+            id_item = table.item(selected_row, 5)
+            
+            if id_item is None:
+                QMessageBox.warning(self, "[GoNetwork AI] Erro", "Não foi possível acessar os dados da entrega selecionada.")
+                return
+                
+            delivery_id = id_item.text()
+            
+            session = get_db_session()
+            
+            delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
+            
+            if not delivery:
+                QMessageBox.warning(self, "[GoNetwork AI] Erro", "A entrega selecionada não foi encontrada no banco de dados.")
+                return
+                
+            # Status em português
+            status_map = {
+                'pending': 'Pendente',
+                'in-progress': 'Em andamento',
+                'review': 'Em revisão',
+                'approved': 'Aprovado',
+                'published': 'Publicado'
+            }
+            
+            status_text = status_map.get(delivery.status, delivery.status.capitalize())
+            
+            # Versões
             versions_text = "Nenhuma versão ainda."
             if delivery.versions:
                 versions = []
@@ -675,54 +811,121 @@ class DeliveryWindow(QWidget, EventAwareWindow):
                     elif v.status == "rejected":
                         status = "Rejeitada"
                     
-                    versions.append(f"Versão {v.version_number}: {status} ({v.upload_time.strftime('%d/%m/%Y %H:%M')})")
+                    upload_time = v.upload_time.strftime('%d/%m/%Y %H:%M') if v.upload_time else "Data desconhecida"
+                    versions.append(f"Versão {v.version_number}: {status} ({upload_time})")
                 
                 versions_text = "\n".join(versions)
             
+            # Responsável
+            responsible_name = delivery.created_by.name if delivery.created_by else "Não atribuído"
+            
+            # Data de prazo
+            due_date_text = delivery.due_date.strftime('%d/%m/%Y') if delivery.due_date else "Sem prazo definido"
+            
+            # Descrição
+            description = delivery.description if delivery.description else "Sem descrição"
+            
             QMessageBox.information(
                 self,
-                f"Detalhes da Entrega: {delivery.title}",
+                f"[GoNetwork AI] Detalhes da Entrega: {delivery.title}",
                 f"Tipo: {delivery.delivery_type}\n"
-                f"Status: {delivery.status.capitalize()}\n"
-                f"Prazo: {delivery.due_date.strftime('%d/%m/%Y') if delivery.due_date else '-'}\n"
-                f"Responsável: {delivery.created_by.name if delivery.created_by else '-'}\n\n"
-                f"Descrição: {delivery.description or 'Sem descrição'}\n\n"
+                f"Status: {status_text}\n"
+                f"Prazo: {due_date_text}\n"
+                f"Responsável: {responsible_name}\n\n"
+                f"Descrição: {description}\n\n"
                 f"Histórico de Versões:\n{versions_text}"
             )
         
-        session.close()
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao visualizar os detalhes da entrega:\n{str(e)}"
+            )
+        finally:
+            if 'session' in locals():
+                session.close()
     
     def change_status(self, delivery_id, status):
         """Altera o status da entrega"""
-        session = get_db_session()
-        
-        delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
-        
-        if delivery:
+        try:
+            session = get_db_session()
+            
+            delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
+            
+            if not delivery:
+                QMessageBox.warning(
+                    self,
+                    "[GoNetwork AI] Erro",
+                    "Não foi possível encontrar a entrega no banco de dados."
+                )
+                return
+                
+            # Status em português para exibição
+            status_map = {
+                'pending': 'Pendente',
+                'in-progress': 'Em andamento',
+                'review': 'Em revisão',
+                'approved': 'Aprovado',
+                'published': 'Publicado'
+            }
+                
+            old_status = delivery.status
             delivery.status = status
             session.commit()
             
             # Recarregar entregas
             self.load_deliveries()
-        
-        session.close()
+            
+            # Informar usuário sobre a mudança bem-sucedida
+            QMessageBox.information(
+                self,
+                "[GoNetwork AI] Status Alterado",
+                f"O status da entrega '{delivery.title}' foi alterado de "
+                f"'{status_map.get(old_status, old_status.capitalize())}' para "
+                f"'{status_map.get(status, status.capitalize())}'."
+            )
+            
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao alterar o status da entrega:\n{str(e)}"
+            )
+        finally:
+            if 'session' in locals():
+                session.close()
     
     def delete_delivery(self, delivery_id, delivery_title):
         """Exclui a entrega"""
-        # Confirmar exclusão
-        confirm = QMessageBox.question(
-            self,
-            "Confirmar Exclusão",
-            f"Excluir a entrega '{delivery_title}'?\n\nEsta ação não pode ser desfeita.",
-            QMessageBox.Yes | QMessageBox.No
-        )
-        
-        if confirm == QMessageBox.Yes:
-            session = get_db_session()
+        try:
+            # Confirmar exclusão
+            confirm = QMessageBox.question(
+                self,
+                "[GoNetwork AI] Confirmar Exclusão",
+                f"Tem certeza que deseja excluir a entrega '{delivery_title}'?\n\n"
+                f"Esta ação não pode ser desfeita e removerá todas as versões associadas.",
+                QMessageBox.Yes | QMessageBox.No
+            )
             
-            delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
-            
-            if delivery:
+            if confirm == QMessageBox.Yes:
+                session = get_db_session()
+                
+                delivery = session.query(Delivery).filter(Delivery.id == delivery_id).first()
+                
+                if not delivery:
+                    QMessageBox.warning(
+                        self,
+                        "[GoNetwork AI] Erro",
+                        f"Não foi possível encontrar a entrega '{delivery_title}' no banco de dados."
+                    )
+                    return
+                
+                # Primeiro excluir versões associadas para evitar violação de chave estrangeira
+                if delivery.versions:
+                    for version in delivery.versions:
+                        session.delete(version)
+                
                 session.delete(delivery)
                 session.commit()
                 
@@ -732,8 +935,16 @@ class DeliveryWindow(QWidget, EventAwareWindow):
                 # Informar usuário
                 QMessageBox.information(
                     self,
-                    "Entrega Excluída",
-                    f"A entrega '{delivery_title}' foi excluída com sucesso."
+                    "[GoNetwork AI] Entrega Excluída",
+                    f"A entrega '{delivery_title}' e suas versões foram excluídas com sucesso."
                 )
-            
-            session.close()
+                
+        except Exception as e:
+            QMessageBox.critical(
+                self,
+                "[GoNetwork AI] Erro",
+                f"Ocorreu um erro ao excluir a entrega:\n{str(e)}"
+            )
+        finally:
+            if 'session' in locals():
+                session.close()

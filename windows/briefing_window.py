@@ -4,7 +4,7 @@ from PyQt5.QtWidgets import (
     QTabWidget, QFileDialog, QListWidget, QListWidgetItem,
     QScrollArea, QMessageBox, QTimeEdit
 )
-from PyQt5.QtCore import Qt, QDate
+from PyQt5.QtCore import Qt, QDate, QTime
 from PyQt5.QtGui import QIcon
 from lib.event_context import EventContext, EventAwareWindow
 from db.models import Event, Briefing, get_db_session
